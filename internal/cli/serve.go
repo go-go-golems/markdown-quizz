@@ -92,9 +92,12 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
 	})
-	mux.HandleFunc("/api/trpc", func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, "tRPC adapter not implemented yet", http.StatusNotImplemented)
-	})
+
+	trpcHandler := func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, fmt.Sprintf("tRPC adapter not implemented yet (%s %s)", r.Method, r.URL.Path), http.StatusNotImplemented)
+	}
+	mux.HandleFunc("/api/trpc", trpcHandler)
+	mux.HandleFunc("/api/trpc/", trpcHandler)
 
 	addr := fmt.Sprintf("%s:%d", serverSettings.Host, serverSettings.Port)
 	srv := &http.Server{
