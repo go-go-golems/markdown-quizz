@@ -192,6 +192,13 @@ The legacy server uses tRPC v10 with `httpBatchLink` and `superjson`. The Go por
 - Use sqlite for persistence with schema parity to legacy.
 - Remove auth entirely and simplify request handling.
 
+## SQLite Implementation (initial)
+
+- Driver: `modernc.org/sqlite` (pure Go; avoids CGO).
+- Migrations: single embedded SQL migration applied via `PRAGMA user_version` (`internal/db/migrations/0001_init.sql`, `internal/db/migrate.go`).
+- JSON fields (`quiz_forms.definition`, `quiz_submissions.responses`): stored as TEXT containing JSON (SQLite JSON1 usage can be added later if needed).
+- No-auth seed: `users(id=1, open_id='synthetic', role='admin')` is created by migration for a fixed-user mode.
+
 ## Alternatives Considered
 
 - **Move to explicit REST endpoints**: simpler server but frontend changes required.

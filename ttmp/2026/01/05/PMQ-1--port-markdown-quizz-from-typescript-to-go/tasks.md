@@ -7,9 +7,9 @@
 - [x] Inventory legacy API endpoints and tRPC procedure names from legacy-version/server/routers.ts
 - [x] Record tRPC transport expectations (batching, superjson, error envelope) from the frontend client
 - [ ] Decide userId strategy for no-auth mode (nullable vs fixed user row) and document in design doc
-- [ ] Define sqlite schema (users/documents/quiz_forms/quiz_submissions) with JSON storage strategy
-- [ ] Choose sqlite driver and migration approach (e.g., modernc/sqlite + goose or pure schema.sql)
-- [ ] Implement sqlite connection/init module with connection lifecycle and migrations
+- [x] Define sqlite schema (users/documents/quiz_forms/quiz_submissions) with JSON storage strategy
+- [x] Choose sqlite driver and migration approach (e.g., modernc/sqlite + goose or pure schema.sql)
+- [x] Implement sqlite connection/init module with connection lifecycle and migrations
 - [ ] Implement quiz DSL extraction: find <form id=...> blocks and parse YAML into JSON
 - [ ] Implement quiz scoring logic (exact checkbox match, fields in definition.fields or definition.form.fields)
 - [ ] Implement document CRUD queries (create/update/delete/get/list) with sqlite and keep slug generation parity
