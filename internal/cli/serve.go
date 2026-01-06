@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-go-golems/XXX/internal/db"
 	"github.com/go-go-golems/XXX/internal/documents"
+	"github.com/go-go-golems/XXX/internal/httpx"
 	"github.com/go-go-golems/XXX/internal/quiz"
 	"github.com/go-go-golems/XXX/internal/trpc"
 	"github.com/go-go-golems/glazed/pkg/cmds"
@@ -120,6 +121,14 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 
 	mux.Handle("/api/trpc", trpcServer)
 	mux.Handle("/api/trpc/", trpcServer)
+
+	if serverSettings.StaticDir != "" {
+		spa, err := httpx.NewSPAHandler(serverSettings.StaticDir)
+		if err != nil {
+			return pkgerrors.Wrap(err, "init spa handler")
+		}
+		mux.Handle("/", spa)
+	}
 
 	addr := fmt.Sprintf("%s:%d", serverSettings.Host, serverSettings.Port)
 	srv := &http.Server{
