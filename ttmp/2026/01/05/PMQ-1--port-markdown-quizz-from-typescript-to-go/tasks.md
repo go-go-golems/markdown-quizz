@@ -17,8 +17,8 @@
 - [x] Implement quiz submission creation (single + multiple) and scoring persistence
 - [x] Implement analytics aggregation (total submissions, avg/high/low score) for a document
 - [x] Implement submissions listing (by document and by user) and single submission fetch with form definition
-- [ ] Implement /api/trpc adapter: procedure routing, input decoding, and response envelope formatting
-- [ ] Implement system.health endpoint in Go handler (public)
+- [x] Implement /api/trpc adapter: procedure routing, input decoding, and response envelope formatting
+- [x] Implement system.health endpoint in Go handler (public)
 - [ ] Decide fate of system.notifyOwner in no-auth mode (keep/remove) and implement if needed
 - [ ] Implement CLI entrypoint with Glazed schema/fields/values for server config (port, sqlite path, static dir, log level)
 - [ ] Implement HTTP server bootstrap with router wiring, middleware, and graceful shutdown
