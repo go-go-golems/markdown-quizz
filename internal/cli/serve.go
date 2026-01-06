@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-go-golems/XXX/internal/db"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -86,6 +87,19 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 		return pkgerrors.Wrap(err, "failed to decode server settings")
 	}
 
+	runCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	sqliteDB, err := db.OpenSQLite(runCtx, db.SQLiteOptions{
+		Path: serverSettings.SQLitePath,
+	})
+	if err != nil {
+		return pkgerrors.Wrap(err, "open sqlite")
+	}
+	defer func() {
+		_ = sqliteDB.Close()
+	}()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -105,9 +119,6 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-
-	runCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	group, groupCtx := errgroup.WithContext(runCtx)
 
