@@ -4,8 +4,8 @@
 
 - [ ] Add tasks here
 
-- [ ] Inventory legacy API endpoints and tRPC procedure names from legacy-version/server/routers.ts
-- [ ] Record tRPC transport expectations (batching, superjson, error envelope) from the frontend client
+- [x] Inventory legacy API endpoints and tRPC procedure names from legacy-version/server/routers.ts
+- [x] Record tRPC transport expectations (batching, superjson, error envelope) from the frontend client
 - [ ] Decide userId strategy for no-auth mode (nullable vs fixed user row) and document in design doc
 - [ ] Define sqlite schema (users/documents/quiz_forms/quiz_submissions) with JSON storage strategy
 - [ ] Choose sqlite driver and migration approach (e.g., modernc/sqlite + goose or pure schema.sql)

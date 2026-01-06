@@ -148,6 +148,44 @@ For the port, this means the CLI entrypoint (e.g., `cmd/markdown-quizz`) uses Gl
 - `glazed/pkg/doc/tutorials/05-build-first-command.md`: CLI patterns + parameter parsing guidance (layers + `InitializeStruct`).
 - `glazed/cmd/examples/refactor-new-packages/main.go`: current wrapper API example (`schema/fields/values`, `values.DecodeSectionInto`).
 
+## Legacy tRPC Contract (what we must match)
+
+The legacy server uses tRPC v10 with `httpBatchLink` and `superjson`. The Go port should implement enough of the HTTP adapter behavior to keep the existing SPA working against `/api/trpc`.
+
+### Procedure inventory (from `legacy-version/server/routers.ts`)
+
+**system**
+- `system.health` (public query): input `{ timestamp: number }` → output `{ ok: true }`
+- `system.notifyOwner` (admin mutation): input `{ title: string, content: string }` → output `{ success: boolean }`
+
+**auth**
+- `auth.me` (public query): output `User | null`
+- `auth.logout` (public mutation): output `{ success: true }`
+
+**documents**
+- `documents.list` (public query): output `Document[]` (admin gets all; otherwise published-only)
+- `documents.myDocuments` (protected query): output `Document[]` (author-only)
+- `documents.getBySlug` (public query): input `{ slug: string }` → output `Document & { forms: QuizForm[] }` (with access checks)
+- `documents.getById` (protected query): input `{ id: number }` → output `Document`
+- `documents.create` (protected mutation): input `{ title, content, description?, category?, isPublished? }` → output `{ id: number, slug: string }`
+- `documents.update` (protected mutation): input `{ id, title?, content?, description?, category?, isPublished? }` → output `{ success: true }`
+- `documents.delete` (protected mutation): input `{ id: number }` → output `{ success: true }`
+- `documents.analytics` (protected query): input `{ id: number }` → output `{ totalSubmissions, averageScore, highestScore, lowestScore }`
+- `documents.submissions` (protected query): input `{ id: number }` → output submissions list for that document
+
+**quiz**
+- `quiz.submitMultiple` (protected mutation): input `{ documentId: number, submissions: { formId: string, responses: Record<string, any> }[] }` → output `{ results: { formId: string, score: number, maxScore: number }[] }`
+- `quiz.submit` (protected mutation): input `{ documentId: number, formId: string, responses: Record<string, any> }` → output `{ id: number, score: number | null, maxScore: number | null }`
+- `quiz.mySubmissions` (protected query): output submissions list for current user
+- `quiz.getSubmission` (protected query): input `{ id: number }` → output submission + `formDefinition` and access checks
+
+### Transport expectations (from `legacy-version/client/src/main.tsx`)
+
+- Client uses `@trpc/client` `httpBatchLink({ url: "/api/trpc", transformer: superjson })`.
+- Client always sends `credentials: "include"` on fetch (cookie auth in legacy; ignored in no-auth mode).
+- Client considers `TRPCClientError.message === "Please login (10001)"` as “unauthorized” and redirects to login; the Go port should avoid emitting this legacy auth error string.
+- Because batching is enabled, the Go adapter should support batched requests (`?batch=1`) in addition to single-procedure calls.
+
 ## Design Decisions
 
 - Preserve `/api/trpc` endpoint path for frontend compatibility.
@@ -173,6 +211,7 @@ For the port, this means the CLI entrypoint (e.g., `cmd/markdown-quizz`) uses Gl
 ## Open Questions
 
 - Should `userId` be nullable everywhere or fixed to a single row?
+  - Recommendation for no-auth mode: create a single synthetic user row (`id=1`, role `admin`) and treat all requests as that user. This keeps `authorId`/`userId` non-null, simplifies queries, and preserves “my*” endpoints as “everything”.
 - What exact subset of tRPC semantics does the frontend rely on (batching, superjson, error envelope)?
 
 ## References
