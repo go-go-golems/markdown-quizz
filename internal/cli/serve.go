@@ -11,6 +11,9 @@ import (
 	"time"
 
 	"github.com/go-go-golems/XXX/internal/db"
+	"github.com/go-go-golems/XXX/internal/documents"
+	"github.com/go-go-golems/XXX/internal/quiz"
+	"github.com/go-go-golems/XXX/internal/trpc"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -100,6 +103,14 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 		_ = sqliteDB.Close()
 	}()
 
+	docStore := documents.NewStore(sqliteDB)
+	quizStore := quiz.NewStore(sqliteDB)
+	trpcServer := trpc.NewServer(trpc.Server{
+		Documents: docStore,
+		Quiz:      quizStore,
+		UserID:    1,
+	})
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -107,11 +118,8 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 		_, _ = w.Write([]byte("ok\n"))
 	})
 
-	trpcHandler := func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, fmt.Sprintf("tRPC adapter not implemented yet (%s %s)", r.Method, r.URL.Path), http.StatusNotImplemented)
-	}
-	mux.HandleFunc("/api/trpc", trpcHandler)
-	mux.HandleFunc("/api/trpc/", trpcHandler)
+	mux.Handle("/api/trpc", trpcServer)
+	mux.Handle("/api/trpc/", trpcServer)
 
 	addr := fmt.Sprintf("%s:%d", serverSettings.Host, serverSettings.Port)
 	srv := &http.Server{
