@@ -10,10 +10,10 @@
 - [x] Define sqlite schema (users/documents/quiz_forms/quiz_submissions) with JSON storage strategy
 - [x] Choose sqlite driver and migration approach (e.g., modernc/sqlite + goose or pure schema.sql)
 - [x] Implement sqlite connection/init module with connection lifecycle and migrations
-- [ ] Implement quiz DSL extraction: find <form id=...> blocks and parse YAML into JSON
-- [ ] Implement quiz scoring logic (exact checkbox match, fields in definition.fields or definition.form.fields)
-- [ ] Implement document CRUD queries (create/update/delete/get/list) with sqlite and keep slug generation parity
-- [ ] Implement quiz_forms persistence and re-extraction on document updates
+- [x] Implement quiz DSL extraction: find <form id=...> blocks and parse YAML into JSON
+- [x] Implement quiz scoring logic (exact checkbox match, fields in definition.fields or definition.form.fields)
+- [x] Implement document CRUD queries (create/update/delete/get/list) with sqlite and keep slug generation parity
+- [x] Implement quiz_forms persistence and re-extraction on document updates
 - [ ] Implement quiz submission creation (single + multiple) and scoring persistence
 - [ ] Implement analytics aggregation (total submissions, avg/high/low score) for a document
 - [ ] Implement submissions listing (by document and by user) and single submission fetch with form definition
