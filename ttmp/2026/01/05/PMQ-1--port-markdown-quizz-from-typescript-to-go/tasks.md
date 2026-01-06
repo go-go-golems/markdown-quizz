@@ -14,9 +14,9 @@
 - [x] Implement quiz scoring logic (exact checkbox match, fields in definition.fields or definition.form.fields)
 - [x] Implement document CRUD queries (create/update/delete/get/list) with sqlite and keep slug generation parity
 - [x] Implement quiz_forms persistence and re-extraction on document updates
-- [ ] Implement quiz submission creation (single + multiple) and scoring persistence
-- [ ] Implement analytics aggregation (total submissions, avg/high/low score) for a document
-- [ ] Implement submissions listing (by document and by user) and single submission fetch with form definition
+- [x] Implement quiz submission creation (single + multiple) and scoring persistence
+- [x] Implement analytics aggregation (total submissions, avg/high/low score) for a document
+- [x] Implement submissions listing (by document and by user) and single submission fetch with form definition
 - [ ] Implement /api/trpc adapter: procedure routing, input decoding, and response envelope formatting
 - [ ] Implement system.health endpoint in Go handler (public)
 - [ ] Decide fate of system.notifyOwner in no-auth mode (keep/remove) and implement if needed
