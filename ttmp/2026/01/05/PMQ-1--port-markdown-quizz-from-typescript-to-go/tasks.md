@@ -22,7 +22,7 @@
 - [ ] Decide fate of system.notifyOwner in no-auth mode (keep/remove) and implement if needed
 - [ ] Implement CLI entrypoint with Glazed schema/fields/values for server config (port, sqlite path, static dir, log level)
 - [ ] Implement HTTP server bootstrap with router wiring, middleware, and graceful shutdown
-- [ ] Integrate static file serving for SPA (configurable asset dir)
+- [x] Integrate static file serving for SPA (configurable asset dir)
 - [ ] Port frontend API client (if needed) to match Go tRPC adapter assumptions
 - [ ] Add unit tests for quiz DSL parsing and scoring (checkbox exact match, radio/text correctness)
 - [ ] Add unit tests for document CRUD (create/update/delete/list/get) and quiz form persistence
