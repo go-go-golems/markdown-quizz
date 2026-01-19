@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { trpc } from '@/lib/trpc';
+import { useSubmitQuizMutation } from '@/store/api';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
@@ -79,21 +79,7 @@ export function QuizForm({
     }
   }, [externalResult]);
 
-  const submitMutation = trpc.quiz.submit.useMutation({
-    onSuccess: (data) => {
-      setSubmitted(true);
-      if (data.score !== null && data.maxScore !== null) {
-        setResult({ score: data.score, maxScore: data.maxScore });
-        toast.success(`Quiz submitted! Score: ${data.score}/${data.maxScore}`);
-      } else {
-        toast.success('Quiz submitted successfully!');
-      }
-      onSubmit?.(formId, responses);
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to submit quiz');
-    },
-  });
+  const [submitQuiz, submitMutation] = useSubmitQuizMutation();
 
   // Extract fields from various possible structures
   const getFields = (): FieldDefinition[] => {
@@ -130,11 +116,25 @@ export function QuizForm({
     e.preventDefault();
     if (readOnly) return;
     
-    submitMutation.mutate({
-      documentId,
-      formId,
-      responses,
-    });
+    void (async () => {
+      try {
+        const data = await submitQuiz({
+          documentId,
+          formId,
+          responses,
+        }).unwrap();
+        setSubmitted(true);
+        if (data.score !== null && data.maxScore !== null) {
+          setResult({ score: data.score, maxScore: data.maxScore });
+          toast.success(`Quiz submitted! Score: ${data.score}/${data.maxScore}`);
+        } else {
+          toast.success('Quiz submitted successfully!');
+        }
+        onSubmit?.(formId, responses);
+      } catch {
+        toast.error('Failed to submit quiz');
+      }
+    })();
   };
 
   const getFieldKey = (field: FieldDefinition) => field.name || field.key || '';
@@ -328,10 +328,10 @@ export function QuizForm({
           {!hideSubmitButton && !readOnly && !submitted && (
             <Button 
               type="submit" 
-              disabled={submitMutation.isPending}
+              disabled={submitMutation.isLoading}
               className="w-full sm:w-auto"
             >
-              {submitMutation.isPending ? (
+              {submitMutation.isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Submitting...

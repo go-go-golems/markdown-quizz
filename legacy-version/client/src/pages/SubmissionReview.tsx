@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { useSubmissionByIdQuery } from '@/store/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, FileText, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
-import { getLoginUrl } from '@/const';
 
 interface FieldDefinition {
   name?: string;
@@ -35,39 +34,17 @@ interface FormDefinition {
 export default function SubmissionReview() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
   
   const submissionId = parseInt(params.id!);
 
-  const { data, isLoading, error } = trpc.quiz.getSubmission.useQuery(
-    { id: submissionId },
-    { enabled: !!submissionId && isAuthenticated }
+  const { data, isLoading, error } = useSubmissionByIdQuery(
+    Number.isFinite(submissionId) && submissionId > 0 ? submissionId : skipToken
   );
 
-  if (authLoading || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader>
-            <CardTitle>Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              You need to sign in to view submission details.
-            </p>
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     );
   }

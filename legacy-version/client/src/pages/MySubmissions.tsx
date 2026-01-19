@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { useMySubmissionsQuery } from '@/store/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,44 +15,11 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ClipboardList, Loader2, Eye, Trophy, Target, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getLoginUrl } from '@/const';
 
 export default function MySubmissions() {
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
 
-  const { data: submissions, isLoading } = trpc.quiz.mySubmissions.useQuery(
-    undefined,
-    { enabled: isAuthenticated }
-  );
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader>
-            <CardTitle>Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              You need to sign in to view your submissions.
-            </p>
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const { data: submissions, isLoading } = useMySubmissionsQuery();
 
   // Calculate stats
   const totalSubmissions = submissions?.length || 0;

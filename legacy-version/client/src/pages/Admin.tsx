@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { useDeleteDocumentMutation, useMyDocumentsQuery } from '@/store/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,64 +39,28 @@ import {
   ArrowLeft,
   ClipboardList
 } from 'lucide-react';
-import { getLoginUrl } from '@/const';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function Admin() {
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: documents, isLoading: docsLoading } = trpc.documents.myDocuments.useQuery(
-    undefined,
-    { enabled: isAuthenticated }
-  );
+  const { data: documents, isLoading: docsLoading } = useMyDocumentsQuery();
+  const [deleteDocument, deleteMutation] = useDeleteDocumentMutation();
 
-  const utils = trpc.useUtils();
-
-  const deleteMutation = trpc.documents.delete.useMutation({
-    onSuccess: () => {
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteDocument(id).unwrap();
       toast.success('Document deleted successfully');
-      utils.documents.myDocuments.invalidate();
-      utils.documents.list.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to delete document');
-    },
-  });
+    } catch {
+      toast.error('Failed to delete document');
+    }
+  };
 
   const filteredDocuments = documents?.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     doc.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader>
-            <CardTitle>Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              You need to sign in to access the admin dashboard.
-            </p>
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -276,7 +239,8 @@ export default function Admin() {
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => deleteMutation.mutate({ id: doc.id })}
+                                    onClick={() => handleDelete(doc.id)}
+                                    disabled={deleteMutation.isLoading}
                                     className="bg-red-500 hover:bg-red-600"
                                   >
                                     Delete

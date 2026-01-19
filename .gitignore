@@ -19,3 +19,8 @@ dist/
 .env
 .envrc
 .history
+
+# Local dev database files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

@@ -7,7 +7,7 @@ import { QuizForm } from './QuizForm';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { parse as parseYaml } from 'yaml';
-import { trpc } from '@/lib/trpc';
+import { useSubmitQuizBatchMutation } from '@/store/api';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -108,22 +108,7 @@ export function MarkdownRenderer({
     return map;
   }, [forms, allForms]);
 
-  const utils = trpc.useUtils();
-
-  const submitAllMutation = trpc.quiz.submitMultiple.useMutation({
-    onSuccess: (data) => {
-      setSubmitted(true);
-      setResults(data.results);
-      
-      const totalScore = data.results.reduce((sum, r) => sum + r.score, 0);
-      const totalMax = data.results.reduce((sum, r) => sum + r.maxScore, 0);
-      
-      toast.success(`All quizzes submitted! Total Score: ${totalScore}/${totalMax}`);
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to submit quizzes');
-    },
-  });
+  const [submitAll, submitAllMutation] = useSubmitQuizBatchMutation();
 
   const handleFormChange = (formId: string, responses: Record<string, any>) => {
     setAllResponses(prev => ({
@@ -141,10 +126,23 @@ export function MarkdownRenderer({
       responses: allResponses[formId] || {},
     }));
 
-    submitAllMutation.mutate({
-      documentId,
-      submissions,
-    });
+    void (async () => {
+      try {
+        const data = await submitAll({
+          documentId,
+          submissions,
+        }).unwrap();
+        setSubmitted(true);
+        setResults(data.results);
+
+        const totalScore = data.results.reduce((sum, r) => sum + r.score, 0);
+        const totalMax = data.results.reduce((sum, r) => sum + r.maxScore, 0);
+
+        toast.success(`All quizzes submitted! Total Score: ${totalScore}/${totalMax}`);
+      } catch {
+        toast.error('Failed to submit quizzes');
+      }
+    })();
   };
 
   const getResultForForm = (formId: string) => {
@@ -260,11 +258,11 @@ export function MarkdownRenderer({
               </div>
               <Button 
                 onClick={handleSubmitAll}
-                disabled={submitAllMutation.isPending}
+                disabled={submitAllMutation.isLoading}
                 size="lg"
                 className="w-full sm:w-auto"
               >
-                {submitAllMutation.isPending ? (
+                {submitAllMutation.isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Submitting...

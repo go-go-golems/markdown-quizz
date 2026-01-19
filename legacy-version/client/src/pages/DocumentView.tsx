@@ -1,22 +1,19 @@
 import React from 'react';
 import { useParams, useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { useDocumentBySlugQuery } from '@/store/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import { ArrowLeft, Edit, Calendar, User, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function DocumentView() {
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const user = { id: 1, role: "admin" as const };
 
-  const { data: document, isLoading, error } = trpc.documents.getBySlug.useQuery(
-    { slug: params.slug! },
-    { enabled: !!params.slug }
-  );
+  const { data: document, isLoading, error } = useDocumentBySlugQuery(params.slug || skipToken);
 
   if (isLoading) {
     return (
@@ -97,16 +94,8 @@ export default function DocumentView() {
               content={document.content}
               documentId={document.id}
               forms={document.forms}
-              readOnly={!isAuthenticated}
+              readOnly={false}
             />
-            
-            {!isAuthenticated && document.forms && document.forms.length > 0 && (
-              <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-950/50 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  Sign in to submit quiz responses and track your progress.
-                </p>
-              </div>
-            )}
           </div>
         </article>
       </main>

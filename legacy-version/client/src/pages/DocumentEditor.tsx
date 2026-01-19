@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { useCreateDocumentMutation, useDocumentByIdQuery, useUpdateDocumentMutation } from '@/store/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,12 +28,10 @@ import {
   Plus,
   Wand2
 } from 'lucide-react';
-import { getLoginUrl } from '@/const';
 
 export default function DocumentEditor() {
   const params = useParams<{ id?: string }>();
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const isEditing = !!params.id;
@@ -48,9 +46,8 @@ export default function DocumentEditor() {
   const [selectedPresetCategory, setSelectedPresetCategory] = useState<string>('all');
 
   // Fetch existing document if editing
-  const { data: existingDoc, isLoading: docLoading } = trpc.documents.getById.useQuery(
-    { id: documentId! },
-    { enabled: isEditing && !!documentId }
+  const { data: existingDoc, isLoading: docLoading } = useDocumentByIdQuery(
+    isEditing && documentId ? documentId : skipToken
   );
 
   // Populate form when document loads
@@ -64,33 +61,8 @@ export default function DocumentEditor() {
     }
   }, [existingDoc]);
 
-  const utils = trpc.useUtils();
-
-  const createMutation = trpc.documents.create.useMutation({
-    onSuccess: (data) => {
-      toast.success('Document created successfully!');
-      utils.documents.list.invalidate();
-      utils.documents.myDocuments.invalidate();
-      navigate(`/documents/${data.slug}`);
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to create document');
-    },
-  });
-
-  const updateMutation = trpc.documents.update.useMutation({
-    onSuccess: () => {
-      toast.success('Document updated successfully!');
-      utils.documents.list.invalidate();
-      utils.documents.myDocuments.invalidate();
-      if (documentId) {
-        utils.documents.getById.invalidate({ id: documentId });
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to update document');
-    },
-  });
+  const [createDocument, createMutation] = useCreateDocumentMutation();
+  const [updateDocument, updateMutation] = useUpdateDocumentMutation();
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -102,24 +74,34 @@ export default function DocumentEditor() {
       return;
     }
 
-    if (isEditing && documentId) {
-      updateMutation.mutate({
-        id: documentId,
-        title,
-        content,
-        description: description || undefined,
-        category: category || undefined,
-        isPublished,
-      });
-    } else {
-      createMutation.mutate({
-        title,
-        content,
-        description: description || undefined,
-        category: category || undefined,
-        isPublished,
-      });
-    }
+    void (async () => {
+      try {
+        if (isEditing && documentId) {
+          await updateDocument({
+            id: documentId,
+            title,
+            content,
+            description: description || undefined,
+            category: category || undefined,
+            isPublished,
+          }).unwrap();
+          toast.success('Document updated successfully!');
+          return;
+        }
+
+        const data = await createDocument({
+          title,
+          content,
+          description: description || undefined,
+          category: category || undefined,
+          isPublished,
+        }).unwrap();
+        toast.success('Document created successfully!');
+        navigate(`/documents/${data.slug}`);
+      } catch {
+        toast.error(isEditing ? 'Failed to update document' : 'Failed to create document');
+      }
+    })();
   };
 
   const insertAtCursor = (text: string) => {
@@ -175,39 +157,11 @@ fields:
     insertAtCursor(snippet);
   };
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving = createMutation.isLoading || updateMutation.isLoading;
 
   const filteredPresets = selectedPresetCategory === 'all' 
     ? presets 
     : presets.filter(p => p.category === selectedPresetCategory);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader>
-            <CardTitle>Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              You need to sign in to create or edit documents.
-            </p>
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (docLoading) {
     return (

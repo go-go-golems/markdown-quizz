@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { useListDocumentsQuery } from '@/store/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,15 +15,13 @@ import {
   ArrowRight,
   Calendar
 } from 'lucide-react';
-import { getLoginUrl } from '@/const';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function Home() {
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: documents, isLoading } = trpc.documents.list.useQuery();
+  const { data: documents, isLoading } = useListDocumentsQuery();
 
   const filteredDocuments = documents?.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -50,26 +47,10 @@ export default function Home() {
             <span className="font-semibold text-lg">Quiz Docs</span>
           </div>
           <div className="flex items-center gap-3">
-            {authLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : isAuthenticated ? (
-              <>
-                <Button variant="outline" onClick={() => navigate('/admin')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Manage
-                </Button>
-                <Button variant="ghost" onClick={() => logout()}>
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <Button asChild>
-                <a href={getLoginUrl()}>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign In
-                </a>
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => navigate('/admin')}>
+              <Settings className="mr-2 h-4 w-4" />
+              Manage
+            </Button>
           </div>
         </div>
       </header>
@@ -161,7 +142,7 @@ export default function Home() {
                 : 'Be the first to create an interactive document with quizzes.'
               }
             </p>
-            {isAuthenticated && !searchQuery && (
+            {!searchQuery && (
               <Button onClick={() => navigate('/admin/new')}>
                 Create Document
               </Button>

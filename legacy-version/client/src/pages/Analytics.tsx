@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, useLocation } from 'wouter';
-import { trpc } from '@/lib/trpc';
-import { useAuth } from '@/_core/hooks/useAuth';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { useDocumentAnalyticsQuery, useDocumentByIdQuery, useDocumentSubmissionsQuery } from '@/store/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,54 +16,22 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, BarChart3, Users, Trophy, Target, Loader2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
-import { getLoginUrl } from '@/const';
 
 export default function Analytics() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
   
   const documentId = parseInt(params.id!);
 
-  const { data: document, isLoading: docLoading } = trpc.documents.getById.useQuery(
-    { id: documentId },
-    { enabled: !!documentId && isAuthenticated }
-  );
+  const docArg = Number.isFinite(documentId) && documentId > 0 ? documentId : skipToken;
+  const { data: document, isLoading: docLoading } = useDocumentByIdQuery(docArg);
+  const { data: analytics, isLoading: analyticsLoading } = useDocumentAnalyticsQuery(docArg);
+  const { data: submissions, isLoading: submissionsLoading } = useDocumentSubmissionsQuery(docArg);
 
-  const { data: analytics, isLoading: analyticsLoading } = trpc.documents.analytics.useQuery(
-    { id: documentId },
-    { enabled: !!documentId && isAuthenticated }
-  );
-
-  const { data: submissions, isLoading: submissionsLoading } = trpc.documents.submissions.useQuery(
-    { id: documentId },
-    { enabled: !!documentId && isAuthenticated }
-  );
-
-  if (authLoading || docLoading) {
+  if (docLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader>
-            <CardTitle>Sign In Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              You need to sign in to view analytics.
-            </p>
-            <Button asChild className="w-full">
-              <a href={getLoginUrl()}>Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     );
   }
