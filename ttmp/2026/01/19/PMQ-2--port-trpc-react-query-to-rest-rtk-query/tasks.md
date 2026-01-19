@@ -1,0 +1,149 @@
+# Tasks
+
+## TODO
+
+- [x] Read the report and establish a baseline (before changes)
+  - Read:
+    - `design-doc/01-port-plan-trpc-react-query-typed-rest-rtk-query.md`
+    - `reference/01-api-inventory-trpc-rest-mapping.md`
+  - Run backend + frontend:
+    - `go run ./cmd/markdown-quizz serve` (from `markdown-quizz/`)
+    - `pnpm -C legacy-version dev` (from `markdown-quizz/`)
+  - Click-through baseline checklist (record what works/doesn't in `changelog.md`):
+    - Home loads and lists docs
+    - View document by slug
+    - Admin list loads
+    - Create document (Save) succeeds
+    - Update document (Save) succeeds
+    - Delete document succeeds
+    - Analytics page loads
+    - Submit quiz (single)
+    - Submit quizzes (batch submit all)
+    - My submissions page loads
+    - Submission review page loads
+  - Acceptance: you can describe “current behavior” in 5–10 bullets and know which backend you are hitting.
+
+- [ ] Lock REST contract decisions (write down “laws of motion”)
+  - In `design-doc/01-port-plan-trpc-react-query-typed-rest-rtk-query.md`, explicitly choose and document:
+    - Base path: `/api`
+    - Content type: `application/json`
+    - Date format: ISO-8601 strings (UTC) for all timestamps
+    - Error envelope: `{ error: { code, message, details? } }`
+    - Pagination policy (explicitly decide “none for now” OR “cursor/limit now”)
+    - Batch policy: keep `submitMultiple` behavior (yes/no; if “no”, propose replacement UX)
+  - Acceptance: contract section is unambiguous and every endpoint can follow it.
+
+- [ ] Choose typing strategy (pick one and stick to it)
+  - Option A (preferred): OpenAPI-first
+    - Create `api/openapi.yaml` (location TBD; document it)
+    - Define schemas for: `Document`, `QuizForm`, `QuizSubmission`, `DocumentAnalytics`, request DTOs, error envelope
+  - Option B: handwritten TS types + Go DTO structs
+    - Create `legacy-version/client/src/api/types.ts` and Go DTOs in a dedicated package
+  - Acceptance: one “source of truth” exists for request/response shapes.
+
+- [ ] Define the final REST endpoint list (no compatibility window)
+  - Using `reference/01-api-inventory-trpc-rest-mapping.md`, finalize the endpoint list (method + path + request + response):
+    - `GET /api/documents?scope=all|mine`
+    - `GET /api/documents/by-slug/{slug}`
+    - `GET /api/documents/{id}`
+    - `POST /api/documents`
+    - `PATCH /api/documents/{id}`
+    - `DELETE /api/documents/{id}`
+    - `GET /api/documents/{id}/analytics`
+    - `GET /api/documents/{id}/submissions`
+    - `POST /api/quiz/submissions`
+    - `POST /api/quiz/submissions/batch`
+    - `GET /api/quiz/submissions?scope=mine`
+    - `GET /api/quiz/submissions/{id}`
+  - Acceptance: every endpoint has a schema + status codes + error cases documented.
+
+- [ ] Implement Go REST API (new code; cutover target)
+  - Create a dedicated package for the REST API (suggestion: `internal/restapi`).
+  - Add a router/mux that mounts under `/api/` and implements every endpoint listed above.
+  - Use the existing stores only:
+    - `internal/documents.Store`
+    - `internal/quiz.Store`
+  - Validation rules (minimum):
+    - Required fields: title/content for create, id/slug/formId where applicable
+    - Type checks for numeric IDs and boolean flags
+    - Reject unknown/invalid JSON with `400`
+  - Response rules:
+    - Always return JSON with `Content-Type: application/json; charset=utf-8`
+    - For delete: pick `204` with empty body OR `200 {success:true}` and document it
+  - Wire into server:
+    - In `internal/cli/serve.go`, mount REST endpoints under `/api/`
+  - Acceptance:
+    - `curl` against each endpoint returns expected JSON
+    - `go test ./...` passes
+
+- [ ] Add backend contract tests (must exist before frontend cutover)
+  - Add `httptest` integration tests for each endpoint:
+    - Happy path
+    - Common invalid inputs
+    - Not-found semantics
+  - Use a temporary sqlite DB per test run:
+    - Create temp file, run migrations, seed minimal data
+  - Acceptance:
+    - `go test ./... -count=1` passes
+    - Tests cover every endpoint in the list at least once
+
+- [ ] Add RTK Query data layer (new frontend “source of truth”)
+  - Add Redux store + RTK Query setup:
+    - `@reduxjs/toolkit`, `react-redux`
+    - `createApi` with `fetchBaseQuery({ baseUrl: '/api' })`
+    - Define `tagTypes` and tag usage matching the invalidation plan
+  - Create a single API slice (example file name):
+    - `legacy-version/client/src/api/api.ts`
+  - Create shared TS types for DTOs:
+    - `legacy-version/client/src/api/types.ts`
+  - Acceptance:
+    - App boots with Redux provider
+    - One simple endpoint (e.g. documents list) is implemented and used in UI successfully
+
+- [ ] Migrate pages/components to RTK Query (systematic, one file at a time)
+  - Home
+    - Replace `trpc.documents.list.useQuery()` with RTK `useListDocumentsQuery()`
+  - Admin
+    - Replace `myDocuments` query + `delete` mutation
+    - Ensure invalidation refreshes lists
+  - DocumentEditor
+    - Replace `getById` query + `create` + `update` mutations
+    - Ensure “Save” errors show a useful message (from REST error envelope)
+  - DocumentView
+    - Replace `getBySlug` query
+  - Analytics
+    - Replace `getById`, `analytics`, `submissions` queries
+  - QuizForm
+    - Replace `quiz.submit` mutation
+  - MarkdownRenderer
+    - Replace `quiz.submitMultiple` batch mutation
+  - MySubmissions
+    - Replace `quiz.mySubmissions` query
+  - SubmissionReview
+    - Replace `quiz.getSubmission` query
+  - Acceptance:
+    - `pnpm -C legacy-version check` passes
+    - Manual click-through checklist (same as baseline) passes against REST
+
+- [ ] Big-bang rip-out (no backwards compatibility)
+  - Backend:
+    - Remove `/api/trpc` mounting and delete the Go tRPC adapter code if no longer used
+  - Frontend:
+    - Remove `@trpc/*`, `@tanstack/react-query`, `superjson` deps
+    - Delete `legacy-version/client/src/lib/trpc.ts` and remove tRPC provider wiring from `client/src/main.tsx`
+  - Acceptance:
+    - The app still works end-to-end (manual checklist)
+    - No references remain:
+      - `rg -n \"@trpc|trpc\\.\" legacy-version/client/src` → no matches
+      - `rg -n \"superjson\" legacy-version/client/src` → no matches
+
+- [ ] Final validation + hygiene
+  - Backend:
+    - `go test ./... -count=1`
+  - Frontend:
+    - `pnpm -C legacy-version check`
+    - `pnpm -C legacy-version build:ui`
+  - Docs:
+    - Update `reference/01-api-inventory-trpc-rest-mapping.md` to mark the tRPC adapter as “deleted”
+    - Ensure `docmgr doctor --ticket PMQ-2` is clean
+  - Acceptance: green tests/builds + docs reflect the new reality.
