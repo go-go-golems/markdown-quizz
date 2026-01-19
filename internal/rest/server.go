@@ -414,8 +414,8 @@ type submitQuizBatchRequest struct {
 }
 
 type submitQuizBatchItemIn struct {
-	FormID     string         `json:"formId"`
-	Responses  map[string]any `json:"responses"`
+	FormID    string         `json:"formId"`
+	Responses map[string]any `json:"responses"`
 }
 
 func splitPath(p string) ([]string, error) {
@@ -530,9 +530,9 @@ func submissionToAPI(s quiz.Submission) map[string]any {
 
 func submissionWithDocumentToAPI(s quiz.SubmissionWithDocument) map[string]any {
 	return map[string]any{
-		"submission":     submissionToAPI(s.Submission),
-		"documentTitle":  s.DocumentTitle,
-		"documentSlug":   s.DocumentSlug,
+		"submission":    submissionToAPI(s.Submission),
+		"documentTitle": s.DocumentTitle,
+		"documentSlug":  s.DocumentSlug,
 	}
 }
 
