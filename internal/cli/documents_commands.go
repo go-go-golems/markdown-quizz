@@ -330,3 +330,375 @@ func (c *DocumentsGetCommand) RunIntoGlazeProcessor(ctx context.Context, parsedL
 	}
 	return gp.AddRow(ctx, row)
 }
+
+type DocumentsUpdateSettings struct {
+	ID          int64   `glazed.parameter:"id"`
+	Title       *string `glazed.parameter:"title"`
+	Content     *string `glazed.parameter:"content"`
+	ContentFile string  `glazed.parameter:"content-file"`
+	Description *string `glazed.parameter:"description"`
+	Category    *string `glazed.parameter:"category"`
+	Publish     bool    `glazed.parameter:"publish"`
+	Unpublish   bool    `glazed.parameter:"unpublish"`
+}
+
+type DocumentsUpdateCommand struct {
+	*cmds.CommandDefinition
+}
+
+func NewDocumentsUpdateCommand() (*DocumentsUpdateCommand, error) {
+	apiSection, err := newAPISection()
+	if err != nil {
+		return nil, err
+	}
+
+	section, err := schema.NewSection(
+		"documents",
+		"Documents",
+		schema.WithDescription("Update documents"),
+		schema.WithFields(
+			fields.New("id", fields.TypeInteger,
+				fields.WithHelp("Document ID"),
+				fields.WithDefault(0),
+			),
+			fields.New("title", fields.TypeString,
+				fields.WithHelp("New title (omit to keep unchanged)"),
+				fields.WithDefault(""),
+			),
+			fields.New("content", fields.TypeString,
+				fields.WithHelp("New content (omit to keep unchanged; mutually exclusive with --content-file)"),
+				fields.WithDefault(""),
+			),
+			fields.New("content-file", fields.TypeString,
+				fields.WithHelp("Path to a file containing the new content (mutually exclusive with --content)"),
+				fields.WithDefault(""),
+			),
+			fields.New("description", fields.TypeString,
+				fields.WithHelp("New description (omit to keep unchanged)"),
+				fields.WithDefault(""),
+			),
+			fields.New("category", fields.TypeString,
+				fields.WithHelp("New category (omit to keep unchanged)"),
+				fields.WithDefault(""),
+			),
+			fields.New("publish", fields.TypeBool,
+				fields.WithHelp("Set isPublished=true (mutually exclusive with --unpublish)"),
+				fields.WithDefault(false),
+			),
+			fields.New("unpublish", fields.TypeBool,
+				fields.WithHelp("Set isPublished=false (mutually exclusive with --publish)"),
+				fields.WithDefault(false),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	s := schema.NewSchema(schema.WithSections(apiSection, section))
+	desc := cmds.NewCommandDefinition(
+		"update",
+		cmds.WithShort("Update a document (PATCH)"),
+		cmds.WithLong("Update a document via REST PATCH /api/documents/:id."),
+		cmds.WithSchema(s),
+	)
+	return &DocumentsUpdateCommand{CommandDefinition: desc}, nil
+}
+
+var _ cmds.GlazeCommand = &DocumentsUpdateCommand{}
+
+func (c *DocumentsUpdateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	api := &APISettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "api", api); err != nil {
+		return pkgerrors.Wrap(err, "decode api settings")
+	}
+	settings := &DocumentsUpdateSettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "documents", settings); err != nil {
+		return pkgerrors.Wrap(err, "decode documents settings")
+	}
+
+	if settings.ID == 0 {
+		return pkgerrors.New("id is required")
+	}
+	if settings.Publish && settings.Unpublish {
+		return pkgerrors.New("publish and unpublish are mutually exclusive")
+	}
+
+	content := trimOptionalStringPtr(settings.Content)
+	if strings.TrimSpace(settings.ContentFile) != "" {
+		if content != nil {
+			return pkgerrors.New("content and content-file are mutually exclusive")
+		}
+		s, err := readFileString(strings.TrimSpace(settings.ContentFile))
+		if err != nil {
+			return err
+		}
+		s = strings.TrimSpace(s)
+		if s != "" {
+			content = &s
+		}
+	}
+
+	var isPublished *bool
+	if settings.Publish {
+		v := true
+		isPublished = &v
+	} else if settings.Unpublish {
+		v := false
+		isPublished = &v
+	}
+
+	req := restclient.UpdateDocumentRequest{
+		Title:       trimOptionalStringPtr(settings.Title),
+		Content:     content,
+		Description: trimOptionalStringPtr(settings.Description),
+		Category:    trimOptionalStringPtr(settings.Category),
+		IsPublished: isPublished,
+	}
+	if req.Title == nil && req.Content == nil && req.Description == nil && req.Category == nil && req.IsPublished == nil {
+		return pkgerrors.New("no fields to update")
+	}
+
+	client, err := restclient.New(restclient.Options{BaseURL: api.BaseURL, Timeout: time.Duration(api.TimeoutSeconds) * time.Second})
+	if err != nil {
+		return err
+	}
+	res, err := client.UpdateDocument(ctx, settings.ID, req)
+	if err != nil {
+		return err
+	}
+
+	return gp.AddRow(ctx, types.NewRow(
+		types.MRP("id", settings.ID),
+		types.MRP("success", res.Success),
+	))
+}
+
+type DocumentsDeleteSettings struct {
+	ID int64 `glazed.parameter:"id"`
+}
+
+type DocumentsDeleteCommand struct {
+	*cmds.CommandDefinition
+}
+
+func NewDocumentsDeleteCommand() (*DocumentsDeleteCommand, error) {
+	apiSection, err := newAPISection()
+	if err != nil {
+		return nil, err
+	}
+
+	section, err := schema.NewSection(
+		"documents",
+		"Documents",
+		schema.WithDescription("Delete documents"),
+		schema.WithFields(
+			fields.New("id", fields.TypeInteger,
+				fields.WithHelp("Document ID"),
+				fields.WithDefault(0),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	s := schema.NewSchema(schema.WithSections(apiSection, section))
+	desc := cmds.NewCommandDefinition(
+		"delete",
+		cmds.WithShort("Delete a document"),
+		cmds.WithLong("Delete a document via REST DELETE /api/documents/:id."),
+		cmds.WithSchema(s),
+	)
+	return &DocumentsDeleteCommand{CommandDefinition: desc}, nil
+}
+
+var _ cmds.GlazeCommand = &DocumentsDeleteCommand{}
+
+func (c *DocumentsDeleteCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	api := &APISettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "api", api); err != nil {
+		return pkgerrors.Wrap(err, "decode api settings")
+	}
+	settings := &DocumentsDeleteSettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "documents", settings); err != nil {
+		return pkgerrors.Wrap(err, "decode documents settings")
+	}
+
+	if settings.ID == 0 {
+		return pkgerrors.New("id is required")
+	}
+
+	client, err := restclient.New(restclient.Options{BaseURL: api.BaseURL, Timeout: time.Duration(api.TimeoutSeconds) * time.Second})
+	if err != nil {
+		return err
+	}
+
+	res, err := client.DeleteDocument(ctx, settings.ID)
+	if err != nil {
+		return err
+	}
+
+	return gp.AddRow(ctx, types.NewRow(
+		types.MRP("id", settings.ID),
+		types.MRP("success", res.Success),
+	))
+}
+
+type DocumentsAnalyticsSettings struct {
+	ID int64 `glazed.parameter:"id"`
+}
+
+type DocumentsAnalyticsCommand struct {
+	*cmds.CommandDefinition
+}
+
+func NewDocumentsAnalyticsCommand() (*DocumentsAnalyticsCommand, error) {
+	apiSection, err := newAPISection()
+	if err != nil {
+		return nil, err
+	}
+
+	section, err := schema.NewSection(
+		"documents",
+		"Documents",
+		schema.WithDescription("Document analytics"),
+		schema.WithFields(
+			fields.New("id", fields.TypeInteger,
+				fields.WithHelp("Document ID"),
+				fields.WithDefault(0),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	s := schema.NewSchema(schema.WithSections(apiSection, section))
+	desc := cmds.NewCommandDefinition(
+		"analytics",
+		cmds.WithShort("Get document analytics"),
+		cmds.WithLong("Fetch document quiz analytics via REST GET /api/documents/:id/analytics."),
+		cmds.WithSchema(s),
+	)
+	return &DocumentsAnalyticsCommand{CommandDefinition: desc}, nil
+}
+
+var _ cmds.GlazeCommand = &DocumentsAnalyticsCommand{}
+
+func (c *DocumentsAnalyticsCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	api := &APISettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "api", api); err != nil {
+		return pkgerrors.Wrap(err, "decode api settings")
+	}
+	settings := &DocumentsAnalyticsSettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "documents", settings); err != nil {
+		return pkgerrors.Wrap(err, "decode documents settings")
+	}
+
+	if settings.ID == 0 {
+		return pkgerrors.New("id is required")
+	}
+
+	client, err := restclient.New(restclient.Options{BaseURL: api.BaseURL, Timeout: time.Duration(api.TimeoutSeconds) * time.Second})
+	if err != nil {
+		return err
+	}
+
+	a, err := client.GetDocumentAnalytics(ctx, settings.ID)
+	if err != nil {
+		return err
+	}
+
+	return gp.AddRow(ctx, types.NewRow(
+		types.MRP("id", settings.ID),
+		types.MRP("totalSubmissions", a.TotalSubmissions),
+		types.MRP("averageScore", a.AverageScore),
+		types.MRP("highestScore", a.HighestScore),
+		types.MRP("lowestScore", a.LowestScore),
+	))
+}
+
+type DocumentsSubmissionsSettings struct {
+	ID int64 `glazed.parameter:"id"`
+}
+
+type DocumentsSubmissionsCommand struct {
+	*cmds.CommandDefinition
+}
+
+func NewDocumentsSubmissionsCommand() (*DocumentsSubmissionsCommand, error) {
+	apiSection, err := newAPISection()
+	if err != nil {
+		return nil, err
+	}
+
+	section, err := schema.NewSection(
+		"documents",
+		"Documents",
+		schema.WithDescription("Document submissions"),
+		schema.WithFields(
+			fields.New("id", fields.TypeInteger,
+				fields.WithHelp("Document ID"),
+				fields.WithDefault(0),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	s := schema.NewSchema(schema.WithSections(apiSection, section))
+	desc := cmds.NewCommandDefinition(
+		"submissions",
+		cmds.WithShort("List submissions for a document"),
+		cmds.WithLong("List submissions via REST GET /api/documents/:id/submissions."),
+		cmds.WithSchema(s),
+	)
+	return &DocumentsSubmissionsCommand{CommandDefinition: desc}, nil
+}
+
+var _ cmds.GlazeCommand = &DocumentsSubmissionsCommand{}
+
+func (c *DocumentsSubmissionsCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+	api := &APISettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "api", api); err != nil {
+		return pkgerrors.Wrap(err, "decode api settings")
+	}
+	settings := &DocumentsSubmissionsSettings{}
+	if err := values.DecodeSectionInto(parsedLayers, "documents", settings); err != nil {
+		return pkgerrors.Wrap(err, "decode documents settings")
+	}
+
+	if settings.ID == 0 {
+		return pkgerrors.New("id is required")
+	}
+
+	client, err := restclient.New(restclient.Options{BaseURL: api.BaseURL, Timeout: time.Duration(api.TimeoutSeconds) * time.Second})
+	if err != nil {
+		return err
+	}
+
+	items, err := client.GetDocumentSubmissions(ctx, settings.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, it := range items {
+		s := it.Submission
+		if err := gp.AddRow(ctx, types.NewRow(
+			types.MRP("submissionId", s.ID),
+			types.MRP("documentId", settings.ID),
+			types.MRP("userId", s.UserID),
+			types.MRP("userName", derefStringPtr(it.UserName)),
+			types.MRP("formId", s.FormID),
+			types.MRP("score", derefIntPtr(s.Score)),
+			types.MRP("maxScore", derefIntPtr(s.MaxScore)),
+			types.MRP("submittedAt", s.SubmittedAt),
+		)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

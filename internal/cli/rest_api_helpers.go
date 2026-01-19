@@ -69,6 +69,17 @@ func parseJSONMap(s string) (map[string]any, error) {
 	return out, nil
 }
 
+func trimOptionalStringPtr(v *string) *string {
+	if v == nil {
+		return nil
+	}
+	s := strings.TrimSpace(*v)
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 func derefStringPtr(v *string) any {
 	if v == nil {
 		return nil

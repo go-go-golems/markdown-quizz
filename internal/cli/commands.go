@@ -60,7 +60,40 @@ func NewCommands() ([]*cobra.Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	documentsParent.AddCommand(cobraDocList, cobraDocImport, cobraDocGet)
+	docUpdateCmd, err := NewDocumentsUpdateCommand()
+	if err != nil {
+		return nil, err
+	}
+	cobraDocUpdate, err := build(docUpdateCmd)
+	if err != nil {
+		return nil, err
+	}
+	docDeleteCmd, err := NewDocumentsDeleteCommand()
+	if err != nil {
+		return nil, err
+	}
+	cobraDocDelete, err := build(docDeleteCmd)
+	if err != nil {
+		return nil, err
+	}
+	docAnalyticsCmd, err := NewDocumentsAnalyticsCommand()
+	if err != nil {
+		return nil, err
+	}
+	cobraDocAnalytics, err := build(docAnalyticsCmd)
+	if err != nil {
+		return nil, err
+	}
+	docSubmissionsCmd, err := NewDocumentsSubmissionsCommand()
+	if err != nil {
+		return nil, err
+	}
+	cobraDocSubmissions, err := build(docSubmissionsCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	documentsParent.AddCommand(cobraDocList, cobraDocImport, cobraDocGet, cobraDocUpdate, cobraDocDelete, cobraDocAnalytics, cobraDocSubmissions)
 
 	// quiz
 	quizParent := &cobra.Command{
