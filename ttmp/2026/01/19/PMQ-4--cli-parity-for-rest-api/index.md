@@ -1,7 +1,7 @@
 ---
 Title: CLI parity for REST API
 Ticket: PMQ-4
-Status: active
+Status: complete
 Topics:
     - cli
     - go
@@ -12,10 +12,11 @@ Owners: []
 RelatedFiles: []
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-19T18:01:43.019039338-05:00
+LastUpdated: 2026-01-19T18:07:19.284565165-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 # CLI parity for REST API
 
