@@ -14,6 +14,7 @@ import (
 	"github.com/go-go-golems/XXX/internal/documents"
 	"github.com/go-go-golems/XXX/internal/httpx"
 	"github.com/go-go-golems/XXX/internal/quiz"
+	"github.com/go-go-golems/XXX/internal/rest"
 	"github.com/go-go-golems/XXX/internal/trpc"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
@@ -48,7 +49,7 @@ func NewServeCommand() (*ServeCommand, error) {
 			),
 			fields.New("port", fields.TypeInteger,
 				fields.WithHelp("Server listen port"),
-				fields.WithDefault(8080),
+				fields.WithDefault(9092),
 			),
 			fields.New("sqlite-path", fields.TypeString,
 				fields.WithHelp("Path to sqlite database file"),
@@ -111,6 +112,11 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 		Quiz:      quizStore,
 		UserID:    1,
 	})
+	restServer := rest.NewServer(rest.Server{
+		Documents: docStore,
+		Quiz:      quizStore,
+		UserID:    1,
+	})
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
@@ -121,6 +127,7 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 
 	mux.Handle("/api/trpc", trpcServer)
 	mux.Handle("/api/trpc/", trpcServer)
+	mux.Handle("/api/", restServer)
 
 	if serverSettings.StaticDir != "" {
 		spa, err := httpx.NewSPAHandler(serverSettings.StaticDir)
