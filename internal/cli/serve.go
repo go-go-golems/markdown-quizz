@@ -15,7 +15,6 @@ import (
 	"github.com/go-go-golems/XXX/internal/httpx"
 	"github.com/go-go-golems/XXX/internal/quiz"
 	"github.com/go-go-golems/XXX/internal/rest"
-	"github.com/go-go-golems/XXX/internal/trpc"
 	"github.com/go-go-golems/glazed/pkg/cmds"
 	"github.com/go-go-golems/glazed/pkg/cmds/fields"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
@@ -107,11 +106,6 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 
 	docStore := documents.NewStore(sqliteDB)
 	quizStore := quiz.NewStore(sqliteDB)
-	trpcServer := trpc.NewServer(trpc.Server{
-		Documents: docStore,
-		Quiz:      quizStore,
-		UserID:    1,
-	})
 	restServer := rest.NewServer(rest.Server{
 		Documents: docStore,
 		Quiz:      quizStore,
@@ -125,8 +119,6 @@ func (c *ServeCommand) Run(ctx context.Context, parsedLayers *layers.ParsedLayer
 		_, _ = w.Write([]byte("ok\n"))
 	})
 
-	mux.Handle("/api/trpc", trpcServer)
-	mux.Handle("/api/trpc/", trpcServer)
 	mux.Handle("/api/", restServer)
 
 	if serverSettings.StaticDir != "" {
