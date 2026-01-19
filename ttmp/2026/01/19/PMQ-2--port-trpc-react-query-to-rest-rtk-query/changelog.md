@@ -43,3 +43,14 @@ Step 1: establish baseline (Go per-module tests; legacy TS tests fail due to DB 
 ### Related Files
 
 - /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/ttmp/2026/01/19/PMQ-2--port-trpc-react-query-to-rest-rtk-query/reference/02-diary.md — Record baseline commands + failures
+
+## 2026-01-19
+
+Step 2: add Go REST /api handlers + contract tests (commit 35f8f75)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/internal/cli/serve.go — Mount /api REST handler
+- /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/internal/rest/server.go — REST endpoint routing + JSON shapes
+- /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/internal/rest/server_test.go — Contract tests for REST endpoints
+

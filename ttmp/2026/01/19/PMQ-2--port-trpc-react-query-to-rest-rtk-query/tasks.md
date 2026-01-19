@@ -57,7 +57,7 @@
     - `GET /api/quiz/submissions/{id}`
   - Acceptance: every endpoint has a schema + status codes + error cases documented.
 
-- [ ] Implement Go REST API (new code; cutover target)
+- [x] Implement Go REST API (new code; cutover target)
   - Create a dedicated package for the REST API (suggestion: `internal/restapi`).
   - Add a router/mux that mounts under `/api/` and implements every endpoint listed above.
   - Use the existing stores only:
@@ -76,7 +76,7 @@
     - `curl` against each endpoint returns expected JSON
     - `go test ./...` passes
 
-- [ ] Add backend contract tests (must exist before frontend cutover)
+- [x] Add backend contract tests (must exist before frontend cutover)
   - Add `httptest` integration tests for each endpoint:
     - Happy path
     - Common invalid inputs

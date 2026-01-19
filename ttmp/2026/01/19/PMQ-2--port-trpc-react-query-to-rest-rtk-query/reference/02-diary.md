@@ -13,6 +13,12 @@ Owners: []
 RelatedFiles:
     - Path: go.work
       Note: Workspace-level go test baseline (root ./... failure)
+    - Path: markdown-quizz/internal/cli/serve.go
+      Note: Mount /api REST handler alongside /api/trpc
+    - Path: markdown-quizz/internal/rest/server.go
+      Note: REST /api handler implementation (documents + quiz)
+    - Path: markdown-quizz/internal/rest/server_test.go
+      Note: REST contract tests (sqlite-backed)
     - Path: markdown-quizz/legacy-version/server/db.ts
       Note: Legacy TS server tests fail with 'Database not available'
     - Path: markdown-quizz/legacy-version/server/quiz.submitMultiple.test.ts
@@ -23,6 +29,7 @@ LastUpdated: 2026-01-19T15:45:35.60951032-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -88,3 +95,46 @@ The legacy TypeScript server test suite is currently not fully runnable in this 
 
 ### Technical details
 - Workspace-root `go test ./...` failure reproduced from `/home/manuel/workspaces/2026-01-05/port-markdown-quizz`.
+
+## Step 2: Implement `/api/*` REST handlers + contract tests
+
+Implemented the initial REST surface area under `/api/*` (documents + quiz submissions) to mirror the current tRPC procedures used by the SPA. This gives us a concrete, debuggable HTTP interface with explicit status codes and a uniform error envelope, while still keeping `/api/trpc` mounted for the moment so we can cut over the frontend in a single later step.
+
+Added Go-side integration-style tests that drive the REST handler against a real sqlite DB (migrations + stores) to lock in request/response shapes and ensure quiz scoring + analytics behavior stays correct through the migration.
+
+**Commit (code):** 35f8f75 — "api: add REST /api endpoints"
+
+### What I did
+- Added `internal/rest` with a `Server` that routes `/api/documents/*` and `/api/quiz/*`
+- Mounted the REST handler in `internal/cli/serve.go` at `mux.Handle("/api/", restServer)` (after `/api/trpc`)
+- Added `internal/rest/server_test.go` to exercise document creation + quiz submissions + analytics
+
+### Why
+- Make the backend interface explicit and testable without tRPC envelopes/batching/superjson.
+- Provide contract tests that become the backend “green” signal before the frontend cutover.
+
+### What worked
+- `GOWORK=off go test ./... -count=1` passes, including the new REST tests.
+- The REST endpoints cover the full inventory table for documents + quiz submissions.
+
+### What didn't work
+- N/A in this step.
+
+### What I learned
+- The sqlite-backed stores are a good foundation for handler-level contract tests: we can validate quiz scoring and analytics without spinning up a server process.
+
+### What was tricky to build
+- Path routing without a router library (ensuring `/api/trpc` remains unaffected while `/api/*` is mounted broadly).
+
+### What warrants a second pair of eyes
+- Status code choices (`201` for quiz submit vs `200`) and strict JSON decoding (`DisallowUnknownFields`)—these are contract decisions that the frontend will now need to match exactly.
+
+### What should be done in the future
+- Add more negative tests (bad IDs, missing fields, not-found cases) once the frontend cutover is underway.
+
+### Code review instructions
+- Start at `markdown-quizz/internal/rest/server.go` (routing + request/response shapes).
+- Validate with `cd markdown-quizz && GOWORK=off go test ./... -count=1`.
+
+### Technical details
+- Error envelope: `{ "error": { "code": "...", "message": "...", "details": ... } }`
