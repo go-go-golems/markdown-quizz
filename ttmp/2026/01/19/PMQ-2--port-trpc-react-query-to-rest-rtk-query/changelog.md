@@ -75,3 +75,8 @@ Step 4: big-bang cutover complete (remove /api/trpc) (commit 18b3d19)
 - /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/internal/rest/server.go — Final /api REST surface
 - /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/legacy-version/client/src/store/api.ts — Client now targets REST via RTK Query
 
+
+## 2026-01-19
+
+Ticket closed
+
