@@ -38,6 +38,8 @@ Established a pre-change baseline for Go + legacy frontend tooling so we can tel
 
 The legacy TypeScript server test suite is currently not fully runnable in this environment because a subset of tests expect a database to be available and fail early with `Database not available`. This is useful context when deciding what “green” means during the migration (Go contract tests will become the authoritative backend validation).
 
+**Commit (docs):** 9865e87 — "PMQ-2: add docs and baseline"
+
 ### What I did
 - Tried to run workspace-level tests: `go test ./...` (failed; see “What didn't work”)
 - Ran Go module tests:
