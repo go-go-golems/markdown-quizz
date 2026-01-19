@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] Add tasks here
+- [x] Add tasks here
 
 - [x] Add REST client package (internal/restclient)
 - [x] Add Glazed CLI commands calling REST (documents/quiz/submissions)

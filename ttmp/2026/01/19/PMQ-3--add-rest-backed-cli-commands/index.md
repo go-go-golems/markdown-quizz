@@ -1,7 +1,7 @@
 ---
 Title: Add REST-backed CLI commands
 Ticket: PMQ-3
-Status: active
+Status: complete
 Topics:
     - backend
     - go
@@ -16,10 +16,12 @@ RelatedFiles:
       Note: REST client package used by CLI
 ExternalSources: []
 Summary: ""
-LastUpdated: 2026-01-19T17:19:14.044307568-05:00
+LastUpdated: 2026-01-19T17:21:54.322550605-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
+
 
 
 # Add REST-backed CLI commands
