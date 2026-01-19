@@ -19,16 +19,19 @@ RelatedFiles:
       Note: REST /api handler implementation (documents + quiz)
     - Path: markdown-quizz/internal/rest/server_test.go
       Note: REST contract tests (sqlite-backed)
+    - Path: markdown-quizz/legacy-version/client/src/main.tsx
+      Note: Redux Provider wiring for RTK Query
+    - Path: markdown-quizz/legacy-version/client/src/store/api.ts
+      Note: RTK Query API slice (REST contract + tags)
     - Path: markdown-quizz/legacy-version/server/db.ts
       Note: Legacy TS server tests fail with 'Database not available'
-    - Path: markdown-quizz/legacy-version/server/quiz.submitMultiple.test.ts
-      Note: Failing baseline tests (Database not available)
 ExternalSources: []
 Summary: ""
 LastUpdated: 2026-01-19T15:45:35.60951032-05:00
 WhatFor: ""
 WhenToUse: ""
 ---
+
 
 
 
@@ -138,3 +141,48 @@ Added Go-side integration-style tests that drive the REST handler against a real
 
 ### Technical details
 - Error envelope: `{ "error": { "code": "...", "message": "...", "details": ... } }`
+
+## Step 3: Port SPA data layer to RTK Query (REST client)
+
+Replaced all tRPC + React Query usage in the SPA with a single RTK Query API slice that speaks the new `/api/*` REST contract. This turns the frontend data layer into a predictable, inspectable set of HTTP calls with explicit caching/invalidation via tag types, and it positions us to delete the Go `/api/trpc` adapter as the final “big-bang” rip-out step.
+
+The migration is intentionally mechanical: each page/component that used `trpc.*.useQuery/useMutation` now uses an equivalent `useXxxQuery/useXxxMutation` hook from `client/src/store/api.ts`.
+
+**Commit (code):** 7b00f28 — "ui: switch client to REST + RTK Query"
+
+### What I did
+- Added RTK Query API slice in `legacy-version/client/src/store/api.ts`
+- Added Redux store wiring in `legacy-version/client/src/store/store.ts` and hooked it up in `legacy-version/client/src/main.tsx`
+- Migrated usage sites:
+  - pages: Home, Admin, DocumentEditor, DocumentView, Analytics, MySubmissions, SubmissionReview
+  - components: QuizForm, MarkdownRenderer
+- Removed the old `legacy-version/client/src/lib/trpc.ts` client wiring
+
+### Why
+- RTK Query becomes the single source of truth for fetching/mutations and cache invalidation.
+- Eliminates the opaque tRPC batch/envelope layer from the browser network trace.
+
+### What worked
+- `pnpm -C legacy-version check` passes after the migration.
+
+### What didn't work
+- N/A in this step.
+
+### What I learned
+- RTK Query invalidation tags map cleanly onto the “invalidate utils” pattern from the old tRPC+React Query setup.
+
+### What was tricky to build
+- Getting “skip” behavior right for parameterized queries (using `skipToken` for routes where the param may be absent until parsed).
+
+### What warrants a second pair of eyes
+- Tag invalidation choices in `client/src/store/api.ts`—these control correctness of UI refresh after mutations.
+
+### What should be done in the future
+- After deleting `/api/trpc`, run a quick manual “happy path” sweep: create doc → view doc → submit quiz → check analytics → review submission.
+
+### Code review instructions
+- Start at `markdown-quizz/legacy-version/client/src/store/api.ts` (endpoint definitions + tag invalidations).
+- Validate typecheck: `pnpm -C markdown-quizz/legacy-version check`.
+
+### Technical details
+- Base query: `fetchBaseQuery({ baseUrl: "/api", credentials: "include" })`

@@ -54,3 +54,13 @@ Step 2: add Go REST /api handlers + contract tests (commit 35f8f75)
 - /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/internal/rest/server.go — REST endpoint routing + JSON shapes
 - /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/internal/rest/server_test.go — Contract tests for REST endpoints
 
+
+## 2026-01-19
+
+Step 3: port SPA to REST + RTK Query (commit 7b00f28)
+
+### Related Files
+
+- /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/legacy-version/client/src/main.tsx — Redux Provider wiring
+- /home/manuel/workspaces/2026-01-05/port-markdown-quizz/markdown-quizz/legacy-version/client/src/store/api.ts — RTK Query endpoints + tag invalidation
+

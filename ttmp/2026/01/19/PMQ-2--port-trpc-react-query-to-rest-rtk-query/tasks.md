@@ -87,7 +87,7 @@
     - `go test ./... -count=1` passes
     - Tests cover every endpoint in the list at least once
 
-- [ ] Add RTK Query data layer (new frontend “source of truth”)
+- [x] Add RTK Query data layer (new frontend “source of truth”)
   - Add Redux store + RTK Query setup:
     - `@reduxjs/toolkit`, `react-redux`
     - `createApi` with `fetchBaseQuery({ baseUrl: '/api' })`
@@ -100,7 +100,7 @@
     - App boots with Redux provider
     - One simple endpoint (e.g. documents list) is implemented and used in UI successfully
 
-- [ ] Migrate pages/components to RTK Query (systematic, one file at a time)
+- [x] Migrate pages/components to RTK Query (systematic, one file at a time)
   - Home
     - Replace `trpc.documents.list.useQuery()` with RTK `useListDocumentsQuery()`
   - Admin
