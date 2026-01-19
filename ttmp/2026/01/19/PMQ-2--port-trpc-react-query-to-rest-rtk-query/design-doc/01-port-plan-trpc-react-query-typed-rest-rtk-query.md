@@ -11,8 +11,10 @@ DocType: design-doc
 Intent: long-term
 Owners: []
 RelatedFiles:
-    - Path: markdown-quizz/internal/trpc/server.go
-      Note: Current Go implementation of the procedure surface
+    - Path: markdown-quizz/internal/rest/server.go
+      Note: REST /api handler implementation (documents + quiz)
+    - Path: markdown-quizz/legacy-version/client/src/store/api.ts
+      Note: RTK Query API slice (REST contract + tags)
     - Path: markdown-quizz/legacy-version/client/src/components/MarkdownRenderer.tsx
       Note: quiz.submitMultiple usage
     - Path: markdown-quizz/legacy-version/client/src/components/QuizForm.tsx
@@ -131,7 +133,7 @@ Standardize on:
 
 - `200` for successful reads
 - `201` for creates
-- `204` for deletes (or `{success:true}` with `200`; pick one and enforce)
+- `200` for deletes (response `{success:true}`)
 - `400` for validation errors
 - `404` for missing resources
 - `500` for unexpected errors
@@ -149,6 +151,25 @@ Rationale: predictable caching is the difference between a UI that “usually wo
 We will not maintain a period where both `/api/trpc` and `/api/*` are supported for the same UI. We will implement REST endpoints, update the UI to RTK Query, and delete the tRPC adapter and dependencies in one coordinated cutover.
 
 Rationale: we own both ends; a compatibility window increases complexity and doubles the number of behaviors to keep correct.
+
+### Locked contract decisions (implemented)
+
+- **Base URL**: `/api`
+- **Transport**: JSON only (no superjson); dates are ISO-8601 strings
+- **Error envelope**:
+
+```json
+{
+  "error": { "code": "bad_request", "message": "title is required", "details": { "field": "title" } }
+}
+```
+
+- **Deletes**: `200` with `{ "success": true }`
+- **Strict JSON decoding**: request bodies reject unknown fields (`DisallowUnknownFields`)
+
+### Typing strategy (chosen)
+
+Handwritten TypeScript types co-located with RTK Query endpoint definitions in `legacy-version/client/src/store/api.ts` (no OpenAPI generation in this repo at this time). Contract tests in Go backstop drift.
 
 ## Alternatives Considered
 
@@ -211,13 +232,13 @@ Operational checklist (OSHA-style):
 
 ## Open Questions
 
-1. Do we want `/api/documents?scope=mine` or separate `/api/my/documents`?
-2. Should we preserve `submitMultiple` as a single endpoint, or push the UI toward multiple `submit` calls?
-3. Should we introduce pagination now (documents list, submissions list), or defer until needed?
-4. How strictly do we want to validate `responses` payloads (currently `map[string]any` / JSON blob)?
+1. Do we want `/api/documents?scope=mine` or separate `/api/my/documents`? (Resolved: keep `scope=mine` query param.)
+2. Should we preserve `submitMultiple` as a single endpoint, or push the UI toward multiple `submit` calls? (Resolved: preserve as `POST /api/quiz/submissions/batch`.)
+3. Should we introduce pagination now (documents list, submissions list), or defer until needed? (Resolved: defer.)
+4. How strictly do we want to validate `responses` payloads (currently `map[string]any` / JSON blob)? (Resolved: treat as JSON blob; validate only outer envelope.)
 
 ## References
 
 - API inventory + mapping table: `ttmp/2026/01/19/PMQ-2--port-trpc-react-query-to-rest-rtk-query/reference/01-api-inventory-trpc-rest-mapping.md`
-- Current Go tRPC adapter: `internal/trpc/server.go`
-- Current frontend tRPC usage: `legacy-version/client/src/pages/*` and `legacy-version/client/src/components/*`
+- Go REST handler: `internal/rest/server.go`
+- Frontend RTK Query layer: `legacy-version/client/src/store/api.ts`

@@ -23,7 +23,7 @@
     - Submission review page loads
   - Acceptance: you can describe “current behavior” in 5–10 bullets and know which backend you are hitting.
 
-- [ ] Lock REST contract decisions (write down “laws of motion”)
+- [x] Lock REST contract decisions (write down “laws of motion”)
   - In `design-doc/01-port-plan-trpc-react-query-typed-rest-rtk-query.md`, explicitly choose and document:
     - Base path: `/api`
     - Content type: `application/json`
@@ -33,7 +33,7 @@
     - Batch policy: keep `submitMultiple` behavior (yes/no; if “no”, propose replacement UX)
   - Acceptance: contract section is unambiguous and every endpoint can follow it.
 
-- [ ] Choose typing strategy (pick one and stick to it)
+- [x] Choose typing strategy (pick one and stick to it)
   - Option A (preferred): OpenAPI-first
     - Create `api/openapi.yaml` (location TBD; document it)
     - Define schemas for: `Document`, `QuizForm`, `QuizSubmission`, `DocumentAnalytics`, request DTOs, error envelope
@@ -41,7 +41,7 @@
     - Create `legacy-version/client/src/api/types.ts` and Go DTOs in a dedicated package
   - Acceptance: one “source of truth” exists for request/response shapes.
 
-- [ ] Define the final REST endpoint list (no compatibility window)
+- [x] Define the final REST endpoint list (no compatibility window)
   - Using `reference/01-api-inventory-trpc-rest-mapping.md`, finalize the endpoint list (method + path + request + response):
     - `GET /api/documents?scope=all|mine`
     - `GET /api/documents/by-slug/{slug}`
@@ -125,7 +125,7 @@
     - `pnpm -C legacy-version check` passes
     - Manual click-through checklist (same as baseline) passes against REST
 
-- [ ] Big-bang rip-out (no backwards compatibility)
+- [x] Big-bang rip-out (no backwards compatibility)
   - Backend:
     - Remove `/api/trpc` mounting and delete the Go tRPC adapter code if no longer used
   - Frontend:
@@ -137,7 +137,7 @@
       - `rg -n \"@trpc|trpc\\.\" legacy-version/client/src` → no matches
       - `rg -n \"superjson\" legacy-version/client/src` → no matches
 
-- [ ] Final validation + hygiene
+- [x] Final validation + hygiene
   - Backend:
     - `go test ./... -count=1`
   - Frontend:

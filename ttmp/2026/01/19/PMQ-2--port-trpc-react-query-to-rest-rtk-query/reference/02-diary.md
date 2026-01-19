@@ -186,3 +186,53 @@ The migration is intentionally mechanical: each page/component that used `trpc.*
 
 ### Technical details
 - Base query: `fetchBaseQuery({ baseUrl: "/api", credentials: "include" })`
+
+## Step 4: Big-bang rip-out of `/api/trpc` + final validation
+
+With the SPA fully migrated to RTK Query over `/api/*`, removed the Go `/api/trpc` adapter and deleted the `internal/trpc` implementation entirely. This completes the intended “big-bang cutover”: the only supported interface between UI and backend is now explicit REST over JSON.
+
+Ran a final verification pass for both Go and the SPA build to ensure the repository is in a shippable state after the rip-out.
+
+**Commit (code):** 18b3d19 — "api: remove /api/trpc adapter"
+
+### What I did
+- Removed `/api/trpc` mounting from `internal/cli/serve.go`
+- Deleted `internal/trpc` implementation + tests
+- Validated Go: `cd markdown-quizz && GOWORK=off go test ./... -count=1`
+- Validated UI:
+  - `pnpm -C markdown-quizz/legacy-version check`
+  - `pnpm -C markdown-quizz/legacy-version build:ui`
+
+### Why
+- Enforce the “no compatibility window” policy: one API surface, one client data layer.
+- Reduce maintenance overhead by deleting the entire tRPC shim layer.
+
+### What worked
+- Go tests pass after removing `internal/trpc`.
+- SPA typecheck and production build succeed against the RTK Query + REST stack.
+
+### What didn't work
+- N/A in this step.
+
+### What I learned
+- Keeping the cutover mechanical (REST endpoints + contract tests → RTK Query migration → rip-out) makes the final deletion step low-risk.
+
+### What was tricky to build
+- N/A (mostly deletion + validation).
+
+### What warrants a second pair of eyes
+- Manual “happy path” run-through of the UI against the Go server, especially around quiz scoring edge cases and analytics/submissions refresh behavior.
+
+### What should be done in the future
+- Consider adding more REST negative tests (malformed JSON, unknown fields, not-found) as a hardening pass.
+
+### Code review instructions
+- Start at `markdown-quizz/internal/rest/server.go` (final backend surface).
+- Confirm `/api/trpc` is gone by grepping for it: `rg -n \"/api/trpc\" markdown-quizz`.
+- Validate with:
+  - `cd markdown-quizz && GOWORK=off go test ./... -count=1`
+  - `pnpm -C markdown-quizz/legacy-version check`
+  - `pnpm -C markdown-quizz/legacy-version build:ui`
+
+### Technical details
+- The REST handler is mounted at `/api/` and routes internally based on path segments (documents + quiz).
