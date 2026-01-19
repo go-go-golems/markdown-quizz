@@ -68,3 +68,24 @@ func parseJSONMap(s string) (map[string]any, error) {
 	}
 	return out, nil
 }
+
+func derefStringPtr(v *string) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
+func derefIntPtr(v *int) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
+func derefFloat64Ptr(v *float64) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}

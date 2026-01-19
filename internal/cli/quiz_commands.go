@@ -125,8 +125,8 @@ func (c *QuizSubmitCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLay
 		types.MRP("id", res.ID),
 		types.MRP("documentId", settings.DocumentID),
 		types.MRP("formId", formID),
-		types.MRP("score", res.Score),
-		types.MRP("maxScore", res.MaxScore),
+		types.MRP("score", derefIntPtr(res.Score)),
+		types.MRP("maxScore", derefIntPtr(res.MaxScore)),
 	))
 }
 

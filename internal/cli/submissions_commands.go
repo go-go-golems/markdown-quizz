@@ -68,9 +68,9 @@ func (c *SubmissionsMineCommand) RunIntoGlazeProcessor(ctx context.Context, pars
 			types.MRP("documentTitle", it.DocumentTitle),
 			types.MRP("documentSlug", it.DocumentSlug),
 			types.MRP("formId", s.FormID),
-			types.MRP("score", s.Score),
-			types.MRP("maxScore", s.MaxScore),
-			types.MRP("scorePct", scorePct),
+			types.MRP("score", derefIntPtr(s.Score)),
+			types.MRP("maxScore", derefIntPtr(s.MaxScore)),
+			types.MRP("scorePct", derefFloat64Ptr(scorePct)),
 			types.MRP("submittedAt", s.SubmittedAt),
 		)); err != nil {
 			return err
@@ -149,10 +149,10 @@ func (c *SubmissionsByDocumentCommand) RunIntoGlazeProcessor(ctx context.Context
 			types.MRP("submissionId", s.ID),
 			types.MRP("documentId", settings.DocumentID),
 			types.MRP("userId", s.UserID),
-			types.MRP("userName", it.UserName),
+			types.MRP("userName", derefStringPtr(it.UserName)),
 			types.MRP("formId", s.FormID),
-			types.MRP("score", s.Score),
-			types.MRP("maxScore", s.MaxScore),
+			types.MRP("score", derefIntPtr(s.Score)),
+			types.MRP("maxScore", derefIntPtr(s.MaxScore)),
 			types.MRP("submittedAt", s.SubmittedAt),
 		)); err != nil {
 			return err
@@ -237,8 +237,8 @@ func (c *SubmissionsGetCommand) RunIntoGlazeProcessor(ctx context.Context, parse
 		types.MRP("documentTitle", item.DocumentTitle),
 		types.MRP("documentSlug", item.DocumentSlug),
 		types.MRP("formId", item.Submission.FormID),
-		types.MRP("score", item.Submission.Score),
-		types.MRP("maxScore", item.Submission.MaxScore),
+		types.MRP("score", derefIntPtr(item.Submission.Score)),
+		types.MRP("maxScore", derefIntPtr(item.Submission.MaxScore)),
 		types.MRP("submittedAt", item.Submission.SubmittedAt),
 		types.MRP("responsesCount", respCount),
 		types.MRP("responses", item.Submission.Responses),
