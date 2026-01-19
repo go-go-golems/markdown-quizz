@@ -203,7 +203,7 @@ The legacy server uses tRPC v10 with `httpBatchLink` and `superjson`. The Go por
 
 - Frontend source currently lives under `legacy-version/` and builds with Vite to `legacy-version/dist/public`.
 - Run the Go server with `--static-dir legacy-version/dist/public` to serve the SPA from `/` while keeping API at `/api/trpc`.
-- For Vite dev server, `legacy-version/vite.config.ts` proxies `/api/*` to `http://127.0.0.1:8080` (adjust port as needed).
+- For Vite dev server, `legacy-version/vite.config.ts` proxies `/api/*` to `http://127.0.0.1:9092` (adjust port as needed).
 
 ## Alternatives Considered
 

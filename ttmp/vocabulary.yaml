@@ -1,3 +1,28 @@
-topics: []
-docTypes: []
-intent: []
+topics:
+    - slug: frontend
+      description: Frontend/UI
+    - slug: legacy
+      description: Legacy code and migrations
+    - slug: cleanup
+      description: Cleanup, removal, simplification
+    - slug: backend
+      description: Backend/server-side work
+    - slug: go
+      description: Go implementation details
+    - slug: porting
+      description: Porting/migration from legacy
+    - slug: api
+      description: API contracts and HTTP endpoints
+docTypes:
+    - slug: index
+      description: Ticket index document
+    - slug: design-doc
+      description: Design document
+    - slug: reference
+      description: Reference document
+intent:
+    - slug: long-term
+      description: Long-term reference/plan
+status:
+    - slug: active
+      description: Active / in progress
