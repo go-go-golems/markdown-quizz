@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,22 @@ func readFileString(p string) (string, error) {
 	b, err := os.ReadFile(p)
 	if err != nil {
 		return "", pkgerrors.Wrap(err, "read file")
+	}
+	return string(b), nil
+}
+
+func readFileOrStdin(p string) (string, error) {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return "", pkgerrors.New("path is required")
+	}
+	if p != "-" {
+		return readFileString(p)
+	}
+
+	b, err := io.ReadAll(io.LimitReader(os.Stdin, 10<<20))
+	if err != nil {
+		return "", pkgerrors.Wrap(err, "read stdin")
 	}
 	return string(b), nil
 }

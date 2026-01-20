@@ -44,11 +44,11 @@ func NewCommands() ([]*cobra.Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	docImportCmd, err := NewDocumentsImportCommand()
+	docCreateCmd, err := NewDocumentsCreateCommand()
 	if err != nil {
 		return nil, err
 	}
-	cobraDocImport, err := build(docImportCmd)
+	cobraDocCreate, err := build(docCreateCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func NewCommands() ([]*cobra.Command, error) {
 		return nil, err
 	}
 
-	documentsParent.AddCommand(cobraDocList, cobraDocImport, cobraDocGet, cobraDocUpdate, cobraDocDelete, cobraDocAnalytics, cobraDocSubmissions)
+	documentsParent.AddCommand(cobraDocList, cobraDocCreate, cobraDocGet, cobraDocUpdate, cobraDocDelete, cobraDocAnalytics, cobraDocSubmissions)
 
 	// quiz
 	quizParent := &cobra.Command{

@@ -95,19 +95,20 @@ func (c *DocumentsListCommand) RunIntoGlazeProcessor(ctx context.Context, parsed
 	return nil
 }
 
-type DocumentsImportSettings struct {
-	File        string  `glazed.parameter:"file"`
+type DocumentsCreateSettings struct {
 	Title       string  `glazed.parameter:"title"`
+	Content     string  `glazed.parameter:"content"`
+	ContentFile string  `glazed.parameter:"content-file"`
 	Description *string `glazed.parameter:"description"`
 	Category    *string `glazed.parameter:"category"`
 	IsPublished bool    `glazed.parameter:"is-published"`
 }
 
-type DocumentsImportCommand struct {
+type DocumentsCreateCommand struct {
 	*cmds.CommandDefinition
 }
 
-func NewDocumentsImportCommand() (*DocumentsImportCommand, error) {
+func NewDocumentsCreateCommand() (*DocumentsCreateCommand, error) {
 	apiSection, err := newAPISection()
 	if err != nil {
 		return nil, err
@@ -116,13 +117,18 @@ func NewDocumentsImportCommand() (*DocumentsImportCommand, error) {
 	section, err := schema.NewSection(
 		"documents",
 		"Documents",
-		schema.WithDescription("Create documents from Markdown files"),
+		schema.WithDescription("Create documents"),
 		schema.WithFields(
-			fields.New("file", fields.TypeString,
-				fields.WithHelp("Markdown file path"),
-			),
 			fields.New("title", fields.TypeString,
-				fields.WithHelp("Document title (defaults to filename)"),
+				fields.WithHelp("Document title (required unless --content-file is a real path)"),
+				fields.WithDefault(""),
+			),
+			fields.New("content", fields.TypeString,
+				fields.WithHelp("Document content (mutually exclusive with --content-file)"),
+				fields.WithDefault(""),
+			),
+			fields.New("content-file", fields.TypeString,
+				fields.WithHelp("Read content from a file path, or '-' for stdin (mutually exclusive with --content)"),
 				fields.WithDefault(""),
 			),
 			fields.New("description", fields.TypeString,
@@ -145,38 +151,52 @@ func NewDocumentsImportCommand() (*DocumentsImportCommand, error) {
 
 	s := schema.NewSchema(schema.WithSections(apiSection, section))
 	desc := cmds.NewCommandDefinition(
-		"import",
-		cmds.WithShort("Import a Markdown document (extracts <form> quizzes)"),
+		"create",
+		cmds.WithShort("Create a document (extracts <form> quizzes)"),
 		cmds.WithLong("Create a document via REST; any <form id=\"...\"> YAML </form> blocks are extracted into quiz forms by the backend."),
 		cmds.WithSchema(s),
 	)
 
-	return &DocumentsImportCommand{CommandDefinition: desc}, nil
+	return &DocumentsCreateCommand{CommandDefinition: desc}, nil
 }
 
-var _ cmds.GlazeCommand = &DocumentsImportCommand{}
+var _ cmds.GlazeCommand = &DocumentsCreateCommand{}
 
-func (c *DocumentsImportCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
+func (c *DocumentsCreateCommand) RunIntoGlazeProcessor(ctx context.Context, parsedLayers *layers.ParsedLayers, gp middlewares.Processor) error {
 	api := &APISettings{}
 	if err := values.DecodeSectionInto(parsedLayers, "api", api); err != nil {
 		return pkgerrors.Wrap(err, "decode api settings")
 	}
-	settings := &DocumentsImportSettings{}
+	settings := &DocumentsCreateSettings{}
 	if err := values.DecodeSectionInto(parsedLayers, "documents", settings); err != nil {
 		return pkgerrors.Wrap(err, "decode documents settings")
 	}
-	if strings.TrimSpace(settings.File) == "" {
-		return pkgerrors.New("file is required")
-	}
-
-	content, err := readFileString(settings.File)
-	if err != nil {
-		return err
-	}
 
 	title := strings.TrimSpace(settings.Title)
+
+	content := strings.TrimSpace(settings.Content)
+	contentFile := strings.TrimSpace(settings.ContentFile)
+	if content != "" && contentFile != "" {
+		return pkgerrors.New("content and content-file are mutually exclusive")
+	}
+	if contentFile != "" {
+		s, err := readFileOrStdin(contentFile)
+		if err != nil {
+			return err
+		}
+		content = s
+	}
+
+	if strings.TrimSpace(content) == "" {
+		return pkgerrors.New("content is required (use --content or --content-file)")
+	}
+
 	if title == "" {
-		title = guessTitleFromPath(settings.File)
+		if contentFile != "" && contentFile != "-" {
+			title = guessTitleFromPath(contentFile)
+		} else {
+			return pkgerrors.New("title is required")
+		}
 	}
 
 	var description *string
