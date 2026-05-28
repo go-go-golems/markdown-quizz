@@ -1,0 +1,3 @@
+package markdown_quizz
+
+//go:generate go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.markdown-quizz -strip-prefix github.com/go-go-golems/XXX ./cmd/... ./pkg/...
