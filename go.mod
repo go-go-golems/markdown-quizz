@@ -1,6 +1,6 @@
 module github.com/go-go-golems/XXX
 
-go 1.25.5
+go 1.26.3
 
 require (
 	github.com/go-go-golems/glazed v0.7.8
