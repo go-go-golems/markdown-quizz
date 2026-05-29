@@ -379,7 +379,7 @@ func (s *Server) handleQuiz(w http.ResponseWriter, r *http.Request, parts []stri
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"submission":     submissionToAPI(detail.SubmissionWithDocument.Submission),
+		"submission":     submissionToAPI(detail.Submission),
 		"documentTitle":  detail.DocumentTitle,
 		"documentSlug":   detail.DocumentSlug,
 		"formDefinition": detail.FormDefinition,
