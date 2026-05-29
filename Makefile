@@ -57,3 +57,11 @@ XXX_BINARY=$(shell which XXX)
 install:
 	GOWORK=off go build -o ./dist/XXX ./cmd/XXX && \
 		cp ./dist/XXX $(XXX_BINARY)
+
+.PHONY: logcopter-generate
+logcopter-generate:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.markdown-quizz -strip-prefix github.com/go-go-golems/XXX ./cmd/... ./pkg/...
+
+.PHONY: logcopter-check
+logcopter-check:
+	GOWORK=off go tool logcopter-gen -include-main -var zlog -area-prefix go-go-golems.markdown-quizz -strip-prefix github.com/go-go-golems/XXX -check ./cmd/... ./pkg/...
